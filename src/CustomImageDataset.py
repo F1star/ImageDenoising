@@ -4,20 +4,25 @@ from torch.utils.data import Dataset
 
 
 class CustomImageDataset(Dataset):
-    def __init__(self, img_dir, transform=None):
-        self.img_dir = img_dir
-        self.img_names = os.listdir(img_dir)
+    def __init__(self, train_dir, transform=None):
+        self.train_dir = train_dir
+        self.origin_paths = [os.path.join(train_dir, 'origin', img_name) for img_name in
+                             os.listdir(os.path.join(train_dir, 'origin'))]
+        self.noise_paths = [os.path.join(train_dir, 'noise', img_name) for img_name in
+                            os.listdir(os.path.join(train_dir, 'noise'))]
         self.transform = transform
+        self.origin_paths.sort()
+        self.noise_paths.sort()
 
     def __len__(self):
-        return len(self.img_names)
+        return len(self.origin_paths)
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.img_dir, self.img_names[idx])
-        image = cv2.imread(img_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # 将BGR转换为RGB
+        origin_img = cv2.imread(self.origin_paths[idx])
+        noise_img = cv2.imread(self.noise_paths[idx])
 
         if self.transform:
-            image = self.transform(image)
+            origin_img = self.transform(origin_img)
+            noise_img = self.transform(noise_img)
 
-        return image
+        return noise_img, origin_img
