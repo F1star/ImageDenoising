@@ -13,8 +13,8 @@ print(f'Using device: {device}')
 transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.Resize((256, 256)),  # 调整图片大小
-    transforms.ToTensor(),  # 将图片转换为Tensor
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # Normalize to [-1, 1]
+    transforms.ToTensor(),  # 将图片转换为Tensor，值范围在[0, 1]
+    # 移除Normalize步骤
 ])
 
 dataset = CustomImageDataset(train_dir='../Data/Train', transform=transform)
@@ -29,7 +29,7 @@ num_epochs = 100
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
-    for data_noise, data_origin in (tqdm(dataloader, desc=f'Epoch {epoch + 1}', total=len(dataloader))):
+    for data_noise, data_origin in tqdm(dataloader, desc=f'Epoch {epoch + 1}', total=len(dataloader)):
         data_noise, data_origin = data_noise.to(device), data_origin.to(device)
         optimizer.zero_grad()
 
@@ -42,5 +42,8 @@ for epoch in range(num_epochs):
         running_loss += loss.item()
 
     print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {running_loss / len(dataloader):.4f}')
+    if (epoch + 1) % 10 == 0:
+        torch.save(model.state_dict(), f'../Pth/Checkpoints_epoch_{epoch + 1}.pth')
+        print(f'Model saved at epoch {epoch + 1}')
 
 torch.save(model.state_dict(), '../Pth/Checkpoints.pth')
