@@ -17,14 +17,14 @@ transform = transforms.Compose([
 ])
 
 dataset = CustomImageDataset(train_dir='../Data/Train', transform=transform)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)  # 将批量大小调整为32
+dataloader = DataLoader(dataset, batch_size=16, shuffle=True)  # 将批量大小调整为16
 
 model = Model().to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.0001)  # 将学习率降低到0.0001
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
 
-num_epochs = 100
+num_epochs = 1000
 early_stop_threshold = 0.0003  # 定义早停的损失阈值
 early_stop_counter = 0
 best_loss = float('inf')

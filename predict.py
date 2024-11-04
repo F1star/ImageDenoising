@@ -1,7 +1,7 @@
 import torch
 import cv2
 from torchvision.transforms import transforms
-from Model import Model
+from training.Model import Model
 import os
 
 # 设置设备
@@ -17,7 +17,7 @@ transform = transforms.Compose([
 
 # 加载模型
 model = Model().to(device)
-model.load_state_dict(torch.load('../Pth3/Best_Checkpoint.pth', map_location=device))
+model.load_state_dict(torch.load('./Pth/Best_Checkpoint.pth', map_location=device))
 model.eval()  # 设置为评估模式
 
 # 定义预测函数
@@ -46,8 +46,8 @@ def predict_image(noise_image_path, output_path):
 
 # 主程序，处理整个文件夹
 if __name__ == "__main__":
-    input_folder = '../Data/Test/noise'  # 输入文件夹路径
-    output_folder = '../Data/Test/denoise'  # 输出文件夹路径
+    input_folder = './Data/Test/noise'  # 输入文件夹路径
+    output_folder = './Data/Test/denoise'  # 输出文件夹路径
 
     # 确保输出文件夹存在
     if not os.path.exists(output_folder):

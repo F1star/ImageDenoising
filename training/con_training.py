@@ -17,7 +17,7 @@ transform = transforms.Compose([
 ])
 
 dataset = CustomImageDataset(train_dir='../Data/Train', transform=transform)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)  # 将批量大小调整为32
+dataloader = DataLoader(dataset, batch_size=16, shuffle=True)  # 将批量大小调整为16
 
 model = Model().to(device)
 model.load_state_dict(torch.load('../Pth/Best_Checkpoint.pth', map_location=device))
