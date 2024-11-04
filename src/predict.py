@@ -17,7 +17,7 @@ transform = transforms.Compose([
 
 # 加载模型
 model = Model().to(device)
-model.load_state_dict(torch.load('../Pth/Checkpoints_epoch_50.pth', map_location=device))
+model.load_state_dict(torch.load('../Pth/Best_Checkpoint.pth', map_location=device))
 model.eval()  # 设置为评估模式
 
 

@@ -3,30 +3,53 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from tqdm import tqdm
+import torchvision
+from torchvision import models
 
 from CustomImageDataset import CustomImageDataset
-from Model import Model
+from Model import UNetModel
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Using device: {device}')
 
 transform = transforms.Compose([
     transforms.ToPILImage(),
-    transforms.Resize((256, 256)),  # 调整图片大小
-    transforms.ToTensor(),  # 将图片转换为Tensor，值范围在[0, 1]
+    transforms.Resize((256, 256)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(10),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.5], std=[0.5])  # 归一化到 [-1, 1]
 ])
 
 dataset = CustomImageDataset(train_dir='../Data/Train', transform=transform)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)  # 将批量大小调整为32
+dataloader = DataLoader(dataset, batch_size=16, shuffle=True)  # 批量大小调整为16
 
-model = Model().to(device)
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)  # 将学习率降低到0.0001
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+model = UNetModel().to(device)
 
-num_epochs = 100
+# 使用 L1 损失函数
+criterion = nn.L1Loss()
+
+# 定义感知损失函数
+vgg = models.vgg16(pretrained=True).features[:16].to(device).eval()
+for param in vgg.parameters():
+    param.requires_grad = False  # 冻结 VGG 网络的参数
+
+
+def perceptual_loss(output, target):
+    output_vgg = vgg(output)
+    target_vgg = vgg(target)
+    loss = nn.L1Loss()(output_vgg, target_vgg)
+    return loss
+
+
+# 使用 AdamW 优化器和较小的学习率
+optimizer = optim.AdamW(model.parameters(), lr=0.00005)
+
+# 学习率调度器
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
+
+num_epochs = 200
 early_stop_threshold = 0.0003  # 定义早停的损失阈值
-early_stop_counter = 0
 best_loss = float('inf')
 
 for epoch in range(num_epochs):
@@ -37,7 +60,9 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
 
         outputs = model(data_noise)
-        loss = criterion(outputs, data_origin)
+        loss_pixel = criterion(outputs, data_origin)
+        loss_percep = perceptual_loss(outputs, data_origin)
+        loss = loss_pixel + 0.01 * loss_percep  # 调整感知损失的权重
 
         loss.backward()
         optimizer.step()
@@ -63,6 +88,17 @@ for epoch in range(num_epochs):
     if average_loss < early_stop_threshold:
         print(f"Loss has reached below {early_stop_threshold} at epoch {epoch + 1}. Stopping training.")
         break
+
+    # 可视化模型输出
+    model.eval()
+    with torch.no_grad():
+        sample_noise, sample_origin = next(iter(dataloader))
+        sample_noise = sample_noise.to(device)
+        sample_output = model(sample_noise)
+        # 去归一化
+        sample_output = sample_output * 0.5 + 0.5
+        torchvision.utils.save_image(sample_output, f'../Outputs/output_epoch_{epoch + 1}.png')
+    model.train()
 
 # 保存最终模型
 torch.save(model.state_dict(), '../Pth/Final_Checkpoint.pth')

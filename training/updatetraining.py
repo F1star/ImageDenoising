@@ -17,14 +17,14 @@ transform = transforms.Compose([
 ])
 
 dataset = CustomImageDataset(train_dir='../Data/Train', transform=transform)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)  # 将批量大小调整为32
+dataloader = DataLoader(dataset, batch_size=64, shuffle=True)  # 将批量大小调整为64
 
 model = Model().to(device)
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)  # 将学习率降低到0.0001
+optimizer = optim.Adam(model.parameters())
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
 
-num_epochs = 100
+num_epochs = 1000
 early_stop_threshold = 0.0003  # 定义早停的损失阈值
 early_stop_counter = 0
 best_loss = float('inf')
@@ -56,7 +56,7 @@ for epoch in range(num_epochs):
     # 保存最好的模型
     if average_loss < best_loss:
         best_loss = average_loss
-        torch.save(model.state_dict(), '../Pth/Best_Checkpoint.pth')
+        torch.save(model.state_dict(), '../Pth3/Best_Checkpoint.pth')
         print(f'Best model saved at epoch {epoch + 1} with loss {best_loss:.6f}')
 
     # 早停策略
@@ -65,4 +65,4 @@ for epoch in range(num_epochs):
         break
 
 # 保存最终模型
-torch.save(model.state_dict(), '../Pth/Final_Checkpoint.pth')
+torch.save(model.state_dict(), '../Pth3/Final_Checkpoint.pth')
